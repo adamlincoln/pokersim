@@ -1,3 +1,5 @@
+from Decision import Decision
+
 class Player:
     def __init__(self, table, position):
         self.chips = 100
@@ -6,7 +8,11 @@ class Player:
         self.hole_cards = []
 
     def __repr__(self):
-        return '<Player Pos: {0}  Hole Cards: {1}>'.format(
+        return '<Player Pos: {0}  Hole Cards: {1}  Chips: {2}>'.format(
             str(self.position) if hasattr(self, 'position') and self.position != None else '',
-            str(self.hole_cards)
+            str(self.hole_cards),
+            str(self.chips)
         )
+
+    def decide(self, error):
+        return Decision.FOLD
