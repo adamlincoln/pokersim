@@ -3,6 +3,7 @@ from pubsub import pub
 from Deck import Deck
 from Player import Player
 from Decision import Decision
+from Pot import Pot
 
 class Table(object):
     '''This is essentially the House.  It runs the game.'''
@@ -11,29 +12,32 @@ class Table(object):
         self.button_seat = 0
         self.rake = 0
         self.tips = 0
-        self.pot = 0
-        self.side_pot = 0
-        self.round_pot = {}
-        self.round_side_pot = {}
-        self.action = 0
-        self.players_eligible_for_action = []
-        self.board = []
         self.units = [2, 2, 4, 4]
         self.limits = [10, 10, 20, 20]
 
+    def initialize_hand(self):
+        #self.pot = {tuple(range(len(self.players))): 0}
+        self.pots = [Pot(self.players)]
+        #self.side_pot = 0
+        #self.round_pot = {}
+        #self.round_pot = dict([(i, None) for i in xrange(len(self.players))])
+        #self.round_side_pots = {}
+        #self.round_side_pots = dict([(i, None) for i in xrange(len(self.players))])
+        #self.round_side_pots = {}
+        self.action = self.button_seat
+        #self.players_eligible_for_action = [i for i in xrange(len(self.players))]
+        self.board = []
+
     def deal(self):
-        assert(self.pot == 0)
-        assert(self.side_pot == 0)
-        assert(self.round_pot == {})
-        assert(self.round_side_pot == {})
+        self.initialize_hand()
+        #assert(self.pot == {})
+        #assert(self.side_pot == 0)
+        #assert(self.round_pot == {})
+        #assert(self.round_side_pots == {})
         deck = Deck()
         deck.shuffle()
-        self.players_eligible_for_action = [i for i in xrange(len(self.players))]
-        self.round_pot = dict([(i, None) for i in xrange(len(self.players))])
-        self.round_side_pot = dict([(i, None) for i in xrange(len(self.players))])
         # Deal first two cards first, so I can use self.action to make it simpler.
         #self.action = self.next_player_position(self.button_seat)
-        self.action = self.button_seat
         while True:
             self.incr_action()
             self.players[self.action].hole_cards.append(deck.deal())
@@ -125,7 +129,7 @@ class Table(object):
         self.pot = 0
         self.side_pot = 0
         self.round_pot = {}
-        self.round_side_pot = {}
+        self.round_side_pots = {}
         for player in self.players:
             del player.hole_cards[:]
         self.move_button()
@@ -159,10 +163,18 @@ class Table(object):
         print 'to player', self.action
 
     def take_bet(self, amt):
-        self.players[self.action].chips -= amt
-        self.round_pot[self.action] = amt
-        pub.sendMessage('bet', who = self.action, amt = amt)
-        self.incr_action()
+        if self.players[self.action].chips >= amt:
+            self.players[self.action].chips -= amt
+            self.pots[-1].receive_bet(amt)
+            #self.round_pot[self.action] = amt
+            pub.sendMessage('bet', who = self.action, amt = amt)
+            self.incr_action()
+        else:
+            self.round_pot[self.action] = self.players[self.action].chips
+            for seat, bet in self.round_pot.iteritems():
+                self.round_side_pots[self.action] = {} # How to denote a side pot and who is out of it?  For future betting, for payouts, determining winner...
+                self.round_side_pots[self.action][seat] = bet - self.round_pot[self.action]
+                self.round_pot[seat] = self.round_pot[self.action]
 
     def move_button(self):
         self.button_seat = self.next_player_position(self.button_seat)

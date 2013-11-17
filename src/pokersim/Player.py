@@ -1,6 +1,6 @@
 from Decision import Decision
 
-class Player:
+class Player(object):
     def __init__(self, table, position):
         self.chips = 100
         self.table = table
@@ -14,5 +14,7 @@ class Player:
             str(self.chips)
         )
 
-    def decide(self, error):
+    def decide(self, error, force=None):
+        if force is not None:
+            return force
         return Decision.FOLD
