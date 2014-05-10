@@ -1,7 +1,10 @@
 class Pot(object):
-    def __init__(self, eligible_to_win, chips=0):
+    def __init__(self, eligible_to_win, chips=0, initial_round_bets=None):
         self.eligible_to_win = eligible_to_win 
         self.chips = chips
+        if round_bets is not None:
+            self.round_bets = initial_round_bets
+            #assert self.positions_eligible_to_win() # What is this for??
 
     def positions_eligible_to_win(self):
         return [player.position for player in self.eligible_to_win]
@@ -40,4 +43,5 @@ class Pot(object):
             if self.round_bets[position] is not None:
                 self.chips += self.round_bets[position]
                 del self.round_bets[position]
+        # Remove from self.eligible_to_win, yes?
 
