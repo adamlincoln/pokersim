@@ -1,79 +1,45 @@
-from pokersim.Table import Table
+from pokersim.Player import Player
 from pokersim.Pot import Pot
+from pokersim.Pot import PotException
 
-def test_pot_one():
-    table = Table(1)
-    pot = Pot(table.players)
+num_players = 10
+
+def test_new_pot():
+    pot = Pot(range(num_players))
     assert pot.chips == 0
-    
-def test_pot_init_1():
-    table = Table(1)
-    pot = Pot(table.players)
-    assert pot.positions_eligible_to_win() == [0]
+    round_bets_keys = pot.round_bets.keys()
+    round_bets_keys.sort()
+    assert round_bets_keys == range(10)
 
-def test_pot_init_2():
-    table = Table()
-    pot = Pot(table.players)
-    assert pot.positions_eligible_to_win() == [i for i in xrange(10)]
-
-def test_pot_no_new_round_1():
-    table = Table(1)
-    pot = Pot(table.players)
+def test_pot_ineligible_position_bet():
+    pot = Pot(range(num_players))
+    assert pot.round_bets == dict(zip(range(10), [None for pos in range(10)]))
     try:
-        pot.receive_bet(0, 1)
-    except AttributeError as e:
-        pass
+        pot.receive_bet(11, 1)
+    except PotException as e:
+        assert str(e) == 'Position 11 is not eligible to win'
     else:
         assert False
-    
-def test_pot_receive_bet_1():
-    table = Table(1)
-    pot = Pot(table.players)
-    assert not hasattr(pot, 'round_bets')
-    pot.new_round()
-    assert hasattr(pot, 'round_bets')
-    assert pot.round_bets == {0: None}
-    pot.receive_bet(0, 1)
-    assert pot.round_bets == {0: 1}
+
+def test_pot_receive_bet():
+    pot = Pot(range(num_players))
+    pot.receive_bet(0, 10)
+    compare_round_bets = dict(zip(range(1, 10), [None for pos in range(1, 10)]))
+    compare_round_bets[0] = 10
+    assert pot.round_bets == compare_round_bets
     assert pot.chips == 0
 
-def test_pot_receive_bet_2():
-    table = Table(1)
-    pot = Pot(table.players)
-    pot.new_round()
-    pot.receive_bet(0, 1)
+def test_pot_single_player_end_round():
+    pot = Pot(range(1))
+    pot.receive_bet(0, 10)
+    assert pot.round_bets == {0: 10}
     assert pot.chips == 0
     pot.end_round()
-    assert pot.chips == 1
+    assert pot.round_bets == {0: None}
+    assert pot.chips == 10
 
-def test_pot_skim_1():
-    table = Table(3)
-    pot = Pot(table.players)
-    pot.new_round()
-    pot.receive_bet(0, 10)
-    pot.receive_bet(1, 10)
-    assert pot.round_bets == {0: 10, 1: 10, 2: None}
-    assert pot.chips == 0
-    for_next_pot = pot.skim_for_side_pot(7)
-    assert pot.round_bets == {0: 7, 1: 7, 2: None}
-    assert for_next_pot == {0: 3, 1: 3}
-
-def test_pot_skim_2():
-    table = Table(3)
-    pot = Pot(table.players)
-    pot.new_round()
-    pot.receive_bet(0, 5)
-    pot.receive_bet(1, 10)
-    assert pot.round_bets == {0: 5, 1: 10, 2: None}
-    assert pot.chips == 0
-    for_next_pot = pot.skim_for_side_pot(7)
-    assert pot.round_bets == {0: 5, 1: 7, 2: None}
-    assert for_next_pot == {1: 3}
-
-def test_pot_round_done_1():
-    table = Table(3)
-    pot = Pot(table.players)
-    pot.new_round()
+def test_pot_three_players_end_round():
+    pot = Pot(range(3))
     assert not pot.round_done()
     pot.receive_bet(0, 5)
     assert not pot.round_done()
@@ -87,12 +53,30 @@ def test_pot_round_done_1():
     assert pot.chips == 5
     pot.end_round()
     assert pot.chips == 25
-    assert not hasattr(pot, 'round_bets')
+    assert pot.round_bets == {1: None, 2: None}
 
-def test_pot_round_done_2():
-    table = Table(3)
-    pot = Pot(table.players)
-    pot.new_round()
+def test_pot_three_players_bad_fold():
+    pot = Pot(range(3))
+    assert not pot.round_done()
+    pot.receive_bet(0, 5)
+    assert not pot.round_done()
+    pot.make_ineligible_to_win(1)
+    assert not pot.round_done()
+    pot.receive_bet(2, 10)
+    assert not pot.round_done()
+    pot.receive_bet(0, 5) # Player 0 calls
+    assert pot.round_done()
+    assert pot.round_bets == {0: 10, 2: 10}
+    assert pot.chips == 0
+    try:
+        pot.make_ineligible_to_win(1)
+    except PotException as e:
+        assert str(e) == 'Position 1 is already not eligible to win'
+    else:
+        assert False
+
+def test_pot_three_players_end_round_2():
+    pot = Pot(range(3))
     assert not pot.round_done()
     pot.receive_bet(0, 0) # Check
     assert not pot.round_done()
@@ -101,4 +85,71 @@ def test_pot_round_done_2():
     pot.receive_bet(2, 0)
     assert pot.round_done()
 
+def test_pot_three_players_bad_end_round():
+    pot = Pot(range(3))
+    assert not pot.round_done()
+    pot.receive_bet(0, 0) # Check
+    assert not pot.round_done()
+    pot.receive_bet(1, 0)
+    try:
+        pot.end_round()
+    except PotException as e:
+        assert str(e) == 'Betting round cannot be complete'
+    else:
+        assert False
+
+def test_pot_skim_1():
+    pot = Pot(range(3))
+    pot.receive_bet(0, 10)
+    pot.receive_bet(1, 10)
+    assert pot.round_bets == {0: 10, 1: 10, 2: None}
+    assert pot.chips == 0
+    for_next_pot = pot.skim_for_side_pot(7)
+    assert pot.round_bets == {0: 7, 1: 7, 2: None}
+    assert for_next_pot == {0: 3, 1: 3, 2: None}
+
+def test_pot_skim_2():
+    pot = Pot(range(3))
+    pot.receive_bet(0, 5)
+    pot.receive_bet(1, 10)
+    assert pot.round_bets == {0: 5, 1: 10, 2: None}
+    assert pot.chips == 0
+    for_next_pot = pot.skim_for_side_pot(7)
+    assert pot.round_bets == {0: 5, 1: 7, 2: None}
+    assert for_next_pot == {1: 3, 2: None}
+
+def test_pot_starting_chips():
+    pot = Pot(range(1), 10)
+    assert pot.round_bets == {0: None}
+    assert pot.chips == 10
+
+def test_pot_initial_round_bets():
+    pot = Pot(range(3), initial_round_bets={0: 5, 2: 5})
+    assert pot.chips == 0
+    assert pot.round_bets == {0: 5, 2: 5}
+
+def test_pot_initial_round_bets_chained():
+    pot = Pot(range(3))
+    pot.receive_bet(0, 15)
+    pot2 = Pot(range(3), initial_round_bets=pot.skim_for_side_pot(10))
+    assert pot.chips == 0
+    assert pot.round_bets == {0: 10, 1: None, 2: None}
+    assert pot2.chips == 0
+    print pot2.round_bets
+    assert pot2.round_bets == {0: 5, 1: None, 2: None}
+
+def test_pot_action_needed():
+    pot = Pot(range(3))
+    assert pot.action_needed(0)
+    assert pot.action_needed(1)
+    assert pot.action_needed(2)
+    assert not pot.action_needed(3)
+    pot.receive_bet(0, 10)
+    assert not pot.action_needed(0)
+    assert pot.action_needed(1)
+    assert pot.action_needed(2)
+    pot.receive_bet(1, 20) # a raise
+    assert pot.action_needed(0)
+    assert not pot.action_needed(1)
+    assert pot.action_needed(2)
 

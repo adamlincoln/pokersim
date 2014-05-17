@@ -18,6 +18,9 @@ class Deck(object):
 
     def deal(self, n=1):
         if n == 1:
-            return self.cards.pop(0)
+            if len(self.cards) > 0:
+                return self.cards.pop(0)
+            else:
+                raise IndexError('No cards left in deck')
         else:
             return [self.deal() for i in xrange(n)]
