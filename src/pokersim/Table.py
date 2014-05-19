@@ -306,20 +306,22 @@ class Table(object):
                 if self.players[self.action].chips >= amt:
                     self.players[self.action].chips -= amt
                     self.pots[potnum].receive_bet(self.action, amt)
-                    #self.round_pot[self.action] = amt:
-                    #pub.sendMessage('bet', who = self.action, amt = amt)
+                    pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': amt})
                 elif self.players[self.action].chips > 0:
                     self.pots[potnum].receive_bet(self.action, self.players[self.action].chips)
+                    pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': self.players[self.action].chips})
                     for_side_pot = self.pots[potnum].skim_for_side_pot(self.players[self.action].chips)
                     self.pots.append(Pot(for_side_pot.keys(), initial_round_bets=for_side_pot))
                     self.players[self.action].chips = 0
             else:
                 if self.players[self.action].chips >= max(self.pots[potnum].round_bets.values()):
                     self.players[self.action].chips -= max(self.pots[potnum].round_bets.values())
+                    pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': max(self.pots[potnum].round_bets.values())})
                     self.pots[potnum].receive_bet(self.action, max(self.pots[potnum].round_bets.values()))
                     amt -= max(self.pots[potnum].round_bets.values())
                 elif self.players[self.action].chips > 0:
                     self.pots[potnum].receive_bet(self.action, self.players[self.action].chips)
+                    pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': self.players[self.action].chips})
                     for_side_pot = self.pots[potnum].skim_for_side_pot(self.players[self.action].chips)
                     for pot in self.pots[potnum + 1:]:
                         pot.make_ineligible_to_win(self.action)
