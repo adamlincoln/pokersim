@@ -14,7 +14,7 @@ class Deck(object):
         random.shuffle(self.cards)
 
     def __str__(self):
-        return json.dumps(['{0}{1}'.format(card.value, card.suit) for card in self.cards])
+        return json.dumps([str(card) for card in self.cards])
 
     def deal(self, n=1):
         if n == 1:
