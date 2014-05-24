@@ -86,7 +86,9 @@ class Hand(object):
         return {'rank': 0, 'values': chain.from_iterable([reversed(multiples[1])])}
 
     def __cmp__(self, other):
+        #if not hasattr(self, 'cached_rank'):
         self.cached_rank = self.rank()
+        #if not hasattr(other, 'cached_rank'):
         other.cached_rank = other.rank()
         if self.cached_rank['rank'] < other.cached_rank['rank']:
             return -1
@@ -102,3 +104,6 @@ class Hand(object):
                     return 1
 
         return 0
+
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0

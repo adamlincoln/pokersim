@@ -477,5 +477,5 @@ def test_hand_straight_tie():
     ])
     assert not hand1 > hand2
     assert not hand1 < hand2
-
+    assert hand1 == hand2
 
