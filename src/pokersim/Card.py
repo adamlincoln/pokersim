@@ -17,7 +17,6 @@ class Card(object):
         self.value = value
 
     def cmp_value(self, other):
-        print 'CMPV', self, other
         return cmp(self.value, other.value)
         
     def __str__(self):
