@@ -1,9 +1,11 @@
 from pubsub import pub
+from itertools import combinations
 
 from Deck import Deck
 from Player import Player
 from Decision import Decision
 from Pot import Pot
+from Hand import Hand
 
 class Table(object):
     '''This is essentially the House.  It runs the game.'''
@@ -74,25 +76,28 @@ class Table(object):
                     for pot in self.pots:
                         pot.make_ineligible_to_win(self.action)
                 elif decision == Decision.CHECK:
-                    pass
+                    pass # I may accommodate this under CALL
                 elif decision == Decision.CALL:
                     # Remember that if you skim for a side pot, you have to effectively fold the current action out of any new side pot you make
-                    pass
+                    # Um is that true?  Or does Pot skim method do that for me?
+                    self.take_bet(self.current_call_amt())
                 elif decision == Decision.RAISE:
                     pass
+                last_to_act = self.action
             potential_winner = self.look_for_winner()
             if potential_winner is not None:
                 for pot in self.pots:
                     pot.end_round()
                 return potential_winner
-            last_to_act = self.action
-            self.incr_action()
+            if not self.incr_action(): # Side effect of moving action
+                for pot in self.pots:
+                    pot.end_round()
+                return # Betting is done
         for pot in self.pots:
             pot.end_round()
 
     def look_for_winner(self):
         # check for one player left - winner!
-        #winner = self.round_pot.keys()[0] if len(self.round_pot) == 1 else None
         potential_winner = None
         for pot in self.pots:
             if len(pot.round_bets) == 1:
@@ -104,7 +109,29 @@ class Table(object):
         return potential_winner
 
     def determine_final_winners(self):
-        pass
+        # Rank final hands!
+        highest_hand_per_position = {}
+        for position in self.pots[0].round_bets.keys():
+            for potential_hand in combinations(self.board + self.players[position].hole_cards, 5):
+                hand = Hand(list(potential_hand))
+                if position not in highest_hand_per_position or hand > highest_hand_per_position[position]:
+                    highest_hand_per_position[position] = hand
+
+        winning_positions = []
+        for pot in self.pots:
+            highest_hand = None
+            winning_positions_this_pot = None
+            for position, hand in highest_hand_per_position.iteritems():
+                if position not in pot.round_bets.keys():
+                    continue
+                if highest_hand is None or hand > highest_hand:
+                    highest_hand = hand
+                    winning_positions_this_pot = [position]
+                elif hand == highest_hand:
+                    winning_positions_this_pot.append(position)
+            winning_positions.append(winning_positions_this_pot)
+
+        return winning_positions
 
     def pay(self, position, amt):
         self.players[position].chips += amt
@@ -265,8 +292,20 @@ class Table(object):
         # Determine winner
         # Pay the winner (winner tips)
 
-    def current_bet_amt(self):
-        return max(self.round_pot.values())
+    def _build_total_bets(self):
+        total_bets = {}
+        for pot in self.pots:
+            for position, amt in pot.round_bets.iteritems():
+                if position in total_bets:
+                    total_bets[position] += amt
+                else:
+                    total_bets[position] = amt
+        return total_bets
+        #return max(total_bets.values())
+
+    def current_call_amt(self):
+        total_bets = self._build_total_bets()
+        return max(total_bets.values()) - (total_bets[self.action]) if total_bets[self.action] is not None else 0
 
     def next_bet_amt(self, betting_round):
         return self.current_bet_amt + self.unit[betting_round]
@@ -287,16 +326,22 @@ class Table(object):
             #return pos + 1
 
     def incr_action(self):
+        '''Returns True is action was moved to a player; False if no one needs to act.'''
         if self.action is None:
             raise TableException('Hand not initialized')
         #print 'action moving from player', self.action
+        starting_at = self.action
+        potential_action = self.action
+        # Ugly amirite?
         while True:
-            potential_action = self.next_player_position(self.action)
+            potential_action = self.next_player_position(potential_action)
+            if potential_action == starting_at:
+                return False
             for pot in self.pots:
                 if pot.action_needed(potential_action):
                     self.action = potential_action
                     #print 'to player', self.action
-                    return
+                    return True
         raise TableException('Action not incremented from {0}'.format(self.action))
 
     def take_bet(self, amt):

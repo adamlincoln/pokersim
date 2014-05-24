@@ -297,3 +297,18 @@ def test_table_deal_1():
     assert table.players[1].chips == 9
     assert table.players[0].chips == 10
 
+def test_table_determine_final_winner():
+    table = Table()
+    num_players = 3
+    players = []
+    for i in xrange(num_players):
+        player = Player(10)
+        player.sit(table, i)
+        players.append(player)
+    table.initialize_hand()
+    table.deal_one_hole_card_to_all_players()
+    table.deal_one_hole_card_to_all_players()
+    table.flop()
+    table.turn()
+    table.river()
+
