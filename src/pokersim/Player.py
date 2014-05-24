@@ -15,7 +15,7 @@ class Player(object):
             except ImportError:
                 raise PlayerException('Brain named "{0}" cannot be found'.format(brain_implementation))
             else:
-                self.brain = eval('brain_module.{0}'.format(brain_implementation))()
+                self.brain = eval('brain_module.{0}'.format(brain_implementation))(self)
         if self.brain is not None and hasattr(self.brain, 'watcher'):
             pub.subscribe(self.brain.watcher, pub.ALL_TOPICS)
 

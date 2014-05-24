@@ -342,7 +342,6 @@ class Table(object):
                     self.action = potential_action
                     #print 'to player', self.action
                     return True
-        raise TableException('Action not incremented from {0}'.format(self.action))
 
     def take_bet(self, amt):
         '''A nuance here is that the creation of a side pot is triggered when this gets called with amt > the player's available chips.'''
