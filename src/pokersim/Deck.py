@@ -1,4 +1,3 @@
-import simplejson as json
 import random
 
 from Card import Card
@@ -14,7 +13,7 @@ class Deck(object):
         random.shuffle(self.cards)
 
     def __str__(self):
-        return json.dumps([str(card) for card in self.cards])
+        return str([str(card) for card in self.cards])
 
     def deal(self, n=1):
         if n == 1:

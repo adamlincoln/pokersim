@@ -1,5 +1,4 @@
 import copy
-import simplejson as json
 
 from pokersim.Deck import Deck
 
@@ -44,4 +43,4 @@ def test_deck_str():
     remember = []
     for i in xrange(52):
         remember.append(str(deck.deal()))
-    assert before == json.dumps(remember)
+    assert before == str([str(card) for card in remember])
