@@ -184,14 +184,6 @@ class Table(object):
             if self.pots[potnum].chips != 0:
                 raise TableException('Problem paying hand.')
 
-        #self.pot = 0
-        #self.side_pot = 0
-        #self.round_pot = {}
-        #self.round_side_pots = {}
-        #for player in self.players:
-            #del player.hole_cards[:]
-        #self.move_button()
-
     def deal(self):
         self.initialize_hand()
         # Deal first two cards first, so I can use self.action to make it simpler.
