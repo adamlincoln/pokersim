@@ -1,4 +1,4 @@
-rom ChipPile import ChipPile
+from ChipPile import ChipPile
 
 class Pot(object):
     def __init__(self, eligible_to_win, chips=0, initial_round_bets=None):
