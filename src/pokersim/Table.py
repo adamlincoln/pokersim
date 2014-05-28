@@ -289,13 +289,12 @@ class Table(object):
     def _build_total_bets(self):
         total_bets = {}
         for pot in self.pots:
-            for position, amt in pot.round_bets.iteritems():
+            for position, pile in pot.round_bets.iteritems():
                 if position in total_bets:
-                    total_bets[position] += amt
+                    total_bets[position] += pile.chips if pile is not None else 0
                 else:
-                    total_bets[position] = amt
+                    total_bets[position] = pile.chips if pile is not None else 0
         return total_bets
-        #return max(total_bets.values())
 
     def current_call_amt(self):
         total_bets = self._build_total_bets()
@@ -353,11 +352,12 @@ class Table(object):
                     self.pots.append(Pot(for_side_pot.keys(), initial_round_bets=for_side_pot))
                     self.players[self.action].chips = 0
             else:
-                if self.players[self.action].chips >= max(self.pots[potnum].round_bets.values()):
-                    self.players[self.action].chips -= max(self.pots[potnum].round_bets.values())
-                    pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': max(self.pots[potnum].round_bets.values())})
-                    self.pots[potnum].receive_bet(max(self.pots[potnum].round_bets.values()), self.action)
-                    amt -= max(self.pots[potnum].round_bets.values())
+                max_chips_in_round_bets = max([pile.chips for pile in self.pots[potnum].round_bets.values() if pile is not None])
+                if self.players[self.action].chips >= max_chips_in_round_bets:
+                    self.players[self.action].chips -= max_chips_in_round_bets
+                    pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': max_chips_in_round_bets})
+                    self.pots[potnum].receive_bet(max_chips_in_round_bets, self.action)
+                    amt -= max_chips_in_round_bets
                 elif self.players[self.action].chips > 0:
                     self.pots[potnum].receive_bet(self.players[self.action].chips, self.action)
                     pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': self.players[self.action].chips})

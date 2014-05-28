@@ -1,6 +1,7 @@
 from pokersim.Player import Player
 from pokersim.Pot import Pot
 from pokersim.Pot import PotException
+from pokersim.ChipPile import ChipPile
 
 num_players = 10
 
@@ -25,14 +26,15 @@ def test_pot_receive_bet():
     pot = Pot(range(num_players))
     pot.receive_bet(10, 0)
     compare_round_bets = dict(zip(range(1, 10), [None for pos in range(1, 10)]))
-    compare_round_bets[0] = 10
+    compare_round_bets[0] = ChipPile('test', 10)
     assert pot.round_bets == compare_round_bets
     assert pot.chips == 0
 
 def test_pot_single_player_end_round():
     pot = Pot(range(1))
     pot.receive_bet(10, 0)
-    assert pot.round_bets == {0: 10}
+    print pot.round_bets
+    assert pot.round_bets == {0: ChipPile('test', 10)}
     assert pot.chips == 0
     pot.end_round()
     assert pot.round_bets == {0: None}
@@ -49,7 +51,7 @@ def test_pot_three_players_end_round():
     assert not pot.round_done()
     pot.make_ineligible_to_win(0) # Player 0 folds
     assert pot.round_done()
-    assert pot.round_bets == {1: 10, 2: 10}
+    assert pot.round_bets == {1: ChipPile('test', 10), 2: ChipPile('testtwo', 10)}
     assert pot.chips == 5
     pot.end_round()
     assert pot.chips == 25
@@ -66,7 +68,7 @@ def test_pot_three_players_bad_fold():
     assert not pot.round_done()
     pot.receive_bet(5, 0) # Player 0 calls
     assert pot.round_done()
-    assert pot.round_bets == {0: 10, 2: 10}
+    assert pot.round_bets == {0: ChipPile('test', 10), 2: ChipPile('test', 10)}
     assert pot.chips == 0
     try:
         pot.make_ineligible_to_win(1)
@@ -102,21 +104,21 @@ def test_pot_skim_1():
     pot = Pot(range(3))
     pot.receive_bet(10, 0)
     pot.receive_bet(10, 1)
-    assert pot.round_bets == {0: 10, 1: 10, 2: None}
+    assert pot.round_bets == {0: ChipPile('test', 10), 1: ChipPile('testtwo', 10), 2: None}
     assert pot.chips == 0
     for_next_pot = pot.skim_for_side_pot(7)
-    assert pot.round_bets == {0: 7, 1: 7, 2: None}
-    assert for_next_pot == {0: 3, 1: 3, 2: None}
+    assert pot.round_bets == {0: ChipPile('test', 7), 1: ChipPile('testtwo', 7), 2: None}
+    assert for_next_pot == {0: ChipPile('test', 3), 1: ChipPile('testtwo', 3), 2: None}
 
 def test_pot_skim_2():
     pot = Pot(range(3))
     pot.receive_bet(5, 0)
     pot.receive_bet(10, 1)
-    assert pot.round_bets == {0: 5, 1: 10, 2: None}
+    assert pot.round_bets == {0: ChipPile('test', 5), 1: ChipPile('testtwo', 10), 2: None}
     assert pot.chips == 0
     for_next_pot = pot.skim_for_side_pot(7)
-    assert pot.round_bets == {0: 5, 1: 7, 2: None}
-    assert for_next_pot == {1: 3, 2: None}
+    assert pot.round_bets == {0: ChipPile('test', 5), 1: ChipPile('testtwo', 7), 2: None}
+    assert for_next_pot == {1: ChipPile('test', 3), 2: None}
 
 def test_pot_starting_chips():
     pot = Pot(range(1), 10)
@@ -133,10 +135,10 @@ def test_pot_initial_round_bets_chained():
     pot.receive_bet(15, 0)
     pot2 = Pot(range(3), initial_round_bets=pot.skim_for_side_pot(10))
     assert pot.chips == 0
-    assert pot.round_bets == {0: 10, 1: None, 2: None}
+    assert pot.round_bets == {0: ChipPile('test', 10), 1: None, 2: None}
     assert pot2.chips == 0
     print pot2.round_bets
-    assert pot2.round_bets == {0: 5, 1: None, 2: None}
+    assert pot2.round_bets == {0: ChipPile('test', 5), 1: None, 2: None}
 
 def test_pot_action_needed():
     pot = Pot(range(3))

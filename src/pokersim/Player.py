@@ -2,10 +2,10 @@ from pubsub import pub
 from importlib import import_module
 
 from Decision import Decision
+from ChipPile import ChipPile
 
 class Player(object):
     def __init__(self, chips, brain_implementation=None):
-        self.chips = chips
         self.leave()
         self.discard_hole_cards()
         self.brain = None
@@ -18,6 +18,15 @@ class Player(object):
                 self.brain = eval('brain_module.{0}'.format(brain_implementation))(self)
         if self.brain is not None and hasattr(self.brain, 'watcher'):
             pub.subscribe(self.brain.watcher, pub.ALL_TOPICS)
+        self._chippile = ChipPile(brain_implementation, chips)
+
+    @property
+    def chips(self):
+        return self._chippile.chips
+
+    @chips.setter
+    def chips(self, value):
+        self._chippile.chips = value
 
     def sit(self, table, position):
         self.table = table
