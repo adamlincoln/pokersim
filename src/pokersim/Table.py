@@ -13,6 +13,7 @@ class Table(object):
         # self.players is going to be a dict with ints as keys denoting the seats each player has.
         self.players = {}
         self.button_seat = -1
+        # Here's how the rake works: $1 for every $10 in pot that is CALLED.  Take first from main pot, then side pots in order until limit is reached ($5 here).
         self.rake = 0
         self.tips = 0
         self.units = [2, 2, 4, 4]
@@ -179,6 +180,7 @@ class Table(object):
         for potnum in xrange(len(winnings)):
             pot_winnings = winnings[potnum]
             for player, amt in pot_winnings.iteritems():
+                # Conduit
                 self.pots[potnum].chips -= amt
                 self.pay(player, amt)
             if self.pots[potnum].chips != 0:
@@ -340,11 +342,12 @@ class Table(object):
         for potnum in xrange(len(self.pots)):
             if potnum == len(self.pots) - 1:
                 if self.players[self.action].chips >= amt:
+                    # Conduit
                     self.players[self.action].chips -= amt
-                    self.pots[potnum].receive_bet(self.action, amt)
+                    self.pots[potnum].receive_bet(amt, self.action)
                     pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': amt})
                 elif self.players[self.action].chips > 0:
-                    self.pots[potnum].receive_bet(self.action, self.players[self.action].chips)
+                    self.pots[potnum].receive_bet(self.players[self.action].chips, self.action)
                     pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': self.players[self.action].chips})
                     for_side_pot = self.pots[potnum].skim_for_side_pot(self.players[self.action].chips)
                     self.pots.append(Pot(for_side_pot.keys(), initial_round_bets=for_side_pot))
@@ -353,10 +356,10 @@ class Table(object):
                 if self.players[self.action].chips >= max(self.pots[potnum].round_bets.values()):
                     self.players[self.action].chips -= max(self.pots[potnum].round_bets.values())
                     pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': max(self.pots[potnum].round_bets.values())})
-                    self.pots[potnum].receive_bet(self.action, max(self.pots[potnum].round_bets.values()))
+                    self.pots[potnum].receive_bet(max(self.pots[potnum].round_bets.values()), self.action)
                     amt -= max(self.pots[potnum].round_bets.values())
                 elif self.players[self.action].chips > 0:
-                    self.pots[potnum].receive_bet(self.action, self.players[self.action].chips)
+                    self.pots[potnum].receive_bet(self.players[self.action].chips, self.action)
                     pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': self.players[self.action].chips})
                     for_side_pot = self.pots[potnum].skim_for_side_pot(self.players[self.action].chips)
                     for pot in self.pots[potnum + 1:]:

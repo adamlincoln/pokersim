@@ -34,7 +34,7 @@ class Pot(object):
         else:
             raise PotException('Betting round cannot be complete')
 
-    def receive_bet(self, frm, amt):
+    def receive_bet(self, amt, frm):
         if frm not in self.round_bets:
             raise PotException('Position {0} is not eligible to win'.format(str(frm)))
         self.round_bets[frm] = self.round_bets[frm] + amt if self.round_bets[frm] is not None else amt
