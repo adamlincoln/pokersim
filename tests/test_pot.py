@@ -33,7 +33,6 @@ def test_pot_receive_bet():
 def test_pot_single_player_end_round():
     pot = Pot(range(1))
     pot.receive_bet(10, 0)
-    print pot.round_bets
     assert pot.round_bets == {0: ChipPile('test', 10)}
     assert pot.chips == 0
     pot.end_round()
@@ -137,7 +136,6 @@ def test_pot_initial_round_bets_chained():
     assert pot.chips == 0
     assert pot.round_bets == {0: ChipPile('test', 10), 1: None, 2: None}
     assert pot2.chips == 0
-    print pot2.round_bets
     assert pot2.round_bets == {0: ChipPile('test', 5), 1: None, 2: None}
 
 def test_pot_action_needed():
