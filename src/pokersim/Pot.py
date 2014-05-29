@@ -1,4 +1,5 @@
 from ChipPile import ChipPile
+from ChipConduit import ChipConduit
 
 class Pot(object):
     def __init__(self, eligible_to_win, chips=0, initial_round_bets=None):
@@ -42,9 +43,7 @@ class Pot(object):
     def end_round(self):
         if self.round_done():
             for pile in self.round_bets.values():
-                # Do I need to be subtracting from the round_bets values here too for tracking?
-                # Yes! Conduit from round_bets value to self.chips.
-                self.chips += pile.chips
+                ChipConduit.move(pile.chips, pile, 'chips', self, 'chips')
             self.round_bets = self.new_round(self.round_bets.keys())
         else:
             raise PotException('Betting round cannot be complete')
