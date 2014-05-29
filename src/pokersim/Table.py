@@ -6,6 +6,7 @@ from Player import Player
 from Decision import Decision
 from Pot import Pot
 from Hand import Hand
+from ChipConduit import ChipConduit
 
 class Table(object):
     '''This is essentially the House.  It runs the game.'''
@@ -134,9 +135,6 @@ class Table(object):
 
         return winning_positions
 
-    def pay(self, position, amt):
-        self.players[position].chips += amt
-
     def end_hand(self, winners):
         #individ_winnings = None
         if len(winners) != len(self.pots):
@@ -180,9 +178,7 @@ class Table(object):
         for potnum in xrange(len(winnings)):
             pot_winnings = winnings[potnum]
             for player, amt in pot_winnings.iteritems():
-                # Conduit
-                self.pots[potnum].chips -= amt
-                self.pay(player, amt)
+                ChipConduit.move(amt, self.pots[potnum], 'chips', self.players[player], 'chips')
             if self.pots[potnum].chips != 0:
                 raise TableException('Problem paying hand.')
 
@@ -341,31 +337,44 @@ class Table(object):
         for potnum in xrange(len(self.pots)):
             if potnum == len(self.pots) - 1:
                 if self.players[self.action].chips >= amt:
-                    # Conduit
-                    self.players[self.action].chips -= amt
-                    self.pots[potnum].receive_bet(amt, self.action)
+                    ChipConduit.move(amt, self.players[self.action], 'chips', self.pots[potnum], 'receive_bet', to_call_args=[self.action])
                     pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': amt})
                 elif self.players[self.action].chips > 0:
-                    self.pots[potnum].receive_bet(self.players[self.action].chips, self.action)
                     pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': self.players[self.action].chips})
-                    for_side_pot = self.pots[potnum].skim_for_side_pot(self.players[self.action].chips)
+                    for_side_pot = ChipConduit.move(
+                        self.players[self.action].chips,
+                        self.players[self.action],
+                        'chips',
+                        self.pots[potnum],
+                        'receive_bet',
+                        to_call_args=[self.action],
+                        between=self.pots[potnum].skim_for_side_pot,
+                        between_args=[self.players[self.action].chips]
+                    )
+                    del for_side_pot[self.action] # This player's not eligible for the new pot
                     self.pots.append(Pot(for_side_pot.keys(), initial_round_bets=for_side_pot))
-                    self.players[self.action].chips = 0
             else:
                 max_chips_in_round_bets = max([pile.chips for pile in self.pots[potnum].round_bets.values() if pile is not None])
                 if self.players[self.action].chips >= max_chips_in_round_bets:
-                    self.players[self.action].chips -= max_chips_in_round_bets
+                    ChipConduit.move(max_chips_in_round_bets, self.players[self.action], 'chips', self.pots[potnum], 'receive_bet', to_call_args=[self.action])
                     pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': max_chips_in_round_bets})
-                    self.pots[potnum].receive_bet(max_chips_in_round_bets, self.action)
                     amt -= max_chips_in_round_bets
                 elif self.players[self.action].chips > 0:
-                    self.pots[potnum].receive_bet(self.players[self.action].chips, self.action)
                     pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': self.players[self.action].chips})
-                    for_side_pot = self.pots[potnum].skim_for_side_pot(self.players[self.action].chips)
+                    for_side_pot = ChipConduit.move(
+                        self.players[self.action].chips,
+                        self.players[self.action],
+                        'chips',
+                        self.pots[potnum],
+                        'receive_bet',
+                        to_call_args=[self.action],
+                        between=self.pots[potnum].skim_for_side_pot,
+                        between_args=[self.players[self.action].chips]
+                    )
                     for pot in self.pots[potnum + 1:]:
                         pot.make_ineligible_to_win(self.action)
+                    del for_side_pot[self.action] # This player's not eligible for the new pot
                     self.pots.insert(potnum + 1, Pot(for_side_pot.keys(), initial_round_bets=for_side_pot))
-                    self.players[self.action].chips = 0
                     break # Nothing left!
 
     def move_button(self):
