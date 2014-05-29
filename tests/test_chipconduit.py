@@ -20,16 +20,30 @@ def some_other_func(amt, *other_args):
     to.chips = amt + 2000
     to.others = other_args[1]
 
+def a_between_func(*other_args):
+    setattr(other_args[0], other_args[1], 'some_value')
+
 def test_chipconduit_callables():
     cp1 = ChipPile('test1', 10)
     cp2 = ChipPile('test2', 20)
     cp1.some_func = some_func
     cp2.some_func2 = some_other_func # Yeah, tricky eh?
     # Those functions are unbound to an object so they have to be passed in for the purposes of this test.
-    ChipConduit.move(8, cp1, 'some_func', cp2, 'some_func2', frm_call_args=[cp1, 'ASTRING'], to_call_args=[cp2, 47])
+    ChipConduit.move(
+        8,
+        cp1,
+        'some_func',
+        cp2,
+        'some_func2',
+        frm_call_args=[cp1, 'ASTRING'],
+        to_call_args=[cp2, 47],
+        between=a_between_func,
+        between_args=[cp1, 'some_attribute']
+    )
     assert cp1.name == 'test1'
     assert cp2.name == 'test2'
     assert cp1.chips == 108
     assert cp1.others == 'ASTRING'
     assert cp2.chips == 2008
     assert cp2.others == 47
+    assert cp1.some_attribute == 'some_value'
