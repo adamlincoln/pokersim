@@ -213,12 +213,12 @@ def test_table_take_bet_skim():
     table.incr_action()
     table.take_bet(6)
     assert len(table.pots) == 1
-    assert table.pots[0].round_bets == {1: ChipPile('testtwo', 5), 0: None, 2: ChipPile('testtwo', 6)}
+    assert table.pots[0].round_bets == {1: ChipPile('test', 5), 0: None, 2: ChipPile('testtwo', 6)}
     table.incr_action()
     table.take_bet(6)
     assert len(table.pots) == 2
     assert table.pots[0].round_bets == {1: ChipPile('test', 4), 0: ChipPile('testtwo', 4), 2: ChipPile('testthree', 4)}
-    assert table.pots[1].round_bets == {1: ChipPile('test', 1), 2: ChipPile('test', 2)}
+    assert table.pots[1].round_bets == {1: ChipPile('test', 1), 2: ChipPile('testtwo', 2)}
     assert table.players[0].chips == 0
     assert table.players[1].chips == 5
     assert table.players[2].chips == 4
