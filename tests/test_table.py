@@ -1,7 +1,6 @@
 from pokersim.Table import Table
 from pokersim.Table import TableException
 from pokersim.Player import Player
-from pokersim.ChipPile import ChipPile
 
 def test_table_defaults():
     table = Table()
@@ -86,7 +85,7 @@ def test_table_take_blinds():
     table.incr_action()
     table.take_blinds()
     # This will have to change when I support more types of games
-    assert table.pots[0].round_bets == {1: ChipPile('test', 1), 2: ChipPile('test', 2), 0: None}
+    assert table.pots[0].round_bets == {1: 1, 2: 2, 0: None}
     assert table.action == 2
 
 def test_table_community_card():
@@ -209,16 +208,16 @@ def test_table_take_bet_skim():
     table.incr_action()
     table.take_bet(5)
     assert len(table.pots) == 1
-    assert table.pots[0].round_bets == {1: ChipPile('test', 5), 0: None, 2: None}
+    assert table.pots[0].round_bets == {1: 5, 0: None, 2: None}
     table.incr_action()
     table.take_bet(6)
     assert len(table.pots) == 1
-    assert table.pots[0].round_bets == {1: ChipPile('test', 5), 0: None, 2: ChipPile('testtwo', 6)}
+    assert table.pots[0].round_bets == {1: 5, 0: None, 2: 6}
     table.incr_action()
     table.take_bet(6)
     assert len(table.pots) == 2
-    assert table.pots[0].round_bets == {1: ChipPile('test', 4), 0: ChipPile('testtwo', 4), 2: ChipPile('testthree', 4)}
-    assert table.pots[1].round_bets == {1: ChipPile('test', 1), 2: ChipPile('testtwo', 2)}
+    assert table.pots[0].round_bets == {1: 4, 0: 4, 2: 4}
+    assert table.pots[1].round_bets == {1: 1, 2: 2}
     assert table.players[0].chips == 0
     assert table.players[1].chips == 5
     assert table.players[2].chips == 4
@@ -235,21 +234,21 @@ def test_table_take_bet_skim_bet_after():
     table.incr_action()
     table.take_bet(5)
     assert len(table.pots) == 1
-    assert table.pots[0].round_bets == {1: ChipPile('test', 5), 0: None, 2: None, 3: None}
+    assert table.pots[0].round_bets == {1: 5, 0: None, 2: None, 3: None}
     table.incr_action()
     table.take_bet(6)
     assert len(table.pots) == 1
-    assert table.pots[0].round_bets == {1: ChipPile('test', 5), 0: None, 2: ChipPile('testtwo', 6), 3: None}
+    assert table.pots[0].round_bets == {1: 5, 0: None, 2: 6, 3: None}
     table.incr_action()
     table.take_bet(6)
     assert len(table.pots) == 2
-    assert table.pots[0].round_bets == {1: ChipPile('test', 4), 0: None, 2: ChipPile('testtwo', 4), 3: ChipPile('testthree', 4)}
-    assert table.pots[1].round_bets == {1: ChipPile('test', 1), 2: ChipPile('testtwo', 2), 0: None}
+    assert table.pots[0].round_bets == {1: 4, 0: None, 2: 4, 3: 4}
+    assert table.pots[1].round_bets == {1: 1, 2: 2, 0: None}
     table.incr_action()
     table.take_bet(6)
     assert len(table.pots) == 2
-    assert table.pots[0].round_bets == {1: ChipPile('test', 4), 0: ChipPile('testtwo', 4), 2: ChipPile('testthree', 4), 3: ChipPile('testfour', 4)}
-    assert table.pots[1].round_bets == {1: ChipPile('test', 1), 2: ChipPile('testtwo', 2), 0: ChipPile('testthree', 2)}
+    assert table.pots[0].round_bets == {1: 4, 0: 4, 2: 4, 3: 4}
+    assert table.pots[1].round_bets == {1: 1, 2: 2, 0: 2}
 
 def test_table_take_bet_two_skim_bets():
     table = Table()
@@ -265,22 +264,22 @@ def test_table_take_bet_two_skim_bets():
     table.incr_action()
     table.take_bet(5)
     assert len(table.pots) == 1
-    assert table.pots[0].round_bets == {1: ChipPile('test', 5), 0: None, 2: None, 3: None}
+    assert table.pots[0].round_bets == {1: 5, 0: None, 2: None, 3: None}
     table.incr_action()
     table.take_bet(6)
     assert len(table.pots) == 1
-    assert table.pots[0].round_bets == {1: ChipPile('test', 5), 0: None, 2: ChipPile('testtwo', 6), 3: None}
+    assert table.pots[0].round_bets == {1: 5, 0: None, 2: 6, 3: None}
     table.incr_action()
     table.take_bet(6)
     assert len(table.pots) == 2
-    assert table.pots[0].round_bets == {1: ChipPile('test', 4), 0: None, 2: ChipPile('testtwo', 4), 3: ChipPile('testthree', 4)}
-    assert table.pots[1].round_bets == {1: ChipPile('test', 1), 2: ChipPile('testtwo', 2), 0: None}
+    assert table.pots[0].round_bets == {1: 4, 0: None, 2: 4, 3: 4}
+    assert table.pots[1].round_bets == {1: 1, 2: 2, 0: None}
     table.incr_action()
     table.take_bet(6)
     assert len(table.pots) == 3
-    assert table.pots[0].round_bets == {1: ChipPile('test', 3), 0: ChipPile('testtwo', 3), 2: ChipPile('testthree', 3), 3: ChipPile('testfour', 3)}
-    assert table.pots[1].round_bets == {1: ChipPile('test', 1), 2: ChipPile('testtwo', 1), 3: ChipPile('testthree', 1)}
-    assert table.pots[2].round_bets == {1: ChipPile('test', 1), 2: ChipPile('testtwo', 2)}
+    assert table.pots[0].round_bets == {1: 3, 0: 3, 2: 3, 3: 3}
+    assert table.pots[1].round_bets == {1: 1, 2: 1, 3: 1}
+    assert table.pots[2].round_bets == {1: 1, 2: 2}
 
 def test_table_deal_1():
     table = Table()

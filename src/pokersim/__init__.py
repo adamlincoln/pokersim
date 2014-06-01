@@ -3,6 +3,10 @@ import argparse
 from pokersim.Table import Table
 from pokersim.Player import Player
 
+from pokersim.Recorder import Recorder
+
+rec = Recorder()
+
 parser = argparse.ArgumentParser(description='Set up a poker game')
 #parser.add_argument('-n', '--numplayers', type=int, nargs='?', default=10, help='Number of players')
 parser.add_argument('-d', '--numhands', type=int, nargs='?', default=1, help='Number of hands')
