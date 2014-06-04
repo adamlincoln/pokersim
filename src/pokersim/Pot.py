@@ -39,17 +39,18 @@ class Pot(object):
     def receive_bet(self, amt, frm, skim=False):
         if frm.position not in self.round_bets:
             raise PotException('Position {0} is not eligible to win'.format(str(frm.position)))
-        move_kwargs = {}
+        move_kwargs = {
+            'frm_tracking': {
+                'type': 'player',
+                'position': frm.position,
+                'brain': frm.brain.__class__.__name__
+            },
+            'to_tracking': 'pot',
+        }
         if skim:
             move_kwargs = {
                 'between': self.skim_for_side_pot,
                 'between_args': [frm.chips],
-                'frm_tracking': {
-                    'type': 'player',
-                    'position': frm.position,
-                    'brain': frm.brain.__class__.__name__
-                },
-                'to_tracking': 'pot'
             }
         return ChipConduit.move(
             amt,
