@@ -36,3 +36,4 @@ def main():
     print 'After', args['numhands'], 'hands:'
     for player in table.players.values():
         print 'Player', player.position, 'has', player.chips, 'chips'
+    print 'The Table has', table.box, 'chips'
