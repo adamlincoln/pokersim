@@ -15,7 +15,12 @@ class Table(object):
         self.players = {}
         self.button_seat = -1
         # Here's how the rake works: $1 for every $10 in pot that is CALLED.  Take first from main pot, then side pots in order until limit is reached ($5 here).
-        self.rake = 0
+        self.rake_rules = {
+            'limit': 5,
+            'amt': 1,
+            'in': 10,
+        }
+        self.box = 0
         self.tips = 0
         self.units = [2, 2, 4, 4]
         self.limits = [10, 10, 20, 20]
@@ -24,6 +29,7 @@ class Table(object):
     def initialize_hand(self):
         self.move_button()
         self.pots = [Pot(self.players.keys())]
+        self.rake = [0]
         self.action = self.button_seat
         self.deck = Deck()
         self.deck.shuffle()
@@ -70,6 +76,7 @@ class Table(object):
 
     def run_betting_round(self):
         last_to_act = None
+        pots_ended = False
         while self.action != last_to_act:
             if self.pots_need_action(self.action):
                 error = None
@@ -94,9 +101,22 @@ class Table(object):
             if not self.incr_action(): # Side effect of moving action
                 for pot in self.pots:
                     pot.end_round()
-                return # Betting is done
-        for pot in self.pots:
-            pot.end_round()
+                pots_ended = True
+                break # Betting is done
+        if not pots_ended:
+            for pot in self.pots:
+                pot.end_round()
+        self.take_rake()
+
+    def take_rake(self):
+        for potnum in xrange(len(self.pots)):
+            total_current_rake = sum(self.rake)
+            if total_current_rake < self.rake_rules['limit']:
+                rake_from_this_pot = self.pots[potnum].chips / self.rake_rules['in'] * self.rake_rules['amt'] - self.rake[potnum]
+                if rake_from_this_pot + total_current_rake > self.rake_rules['limit']:
+                    rake_from_this_pot = self.rake_rules['limit'] - total_current_rake
+                if rake_from_this_pot > 0:
+                    ChipConduit.move(rake_from_this_pot, self.pots[potnum], 'chips', self.rake, potnum, frm_tracking='pot', to_tracking='rake')
 
     def look_for_winner(self):
         # check for one player left - winner!
@@ -149,7 +169,6 @@ class Table(object):
             if extra_winnings == 0:
                 for winner in winners[potnum]:
                     pot_winnings[winner] = self.pots[potnum].chips / len(winners[potnum])
-                #individ_winnings = self.pot / len(winners)
             else:
                 equal_share = (self.pots[potnum].chips - extra_winnings) / len(winners[potnum])
                 for winner in winners[potnum]:
@@ -159,28 +178,22 @@ class Table(object):
                     player = self.next_player_position(player)
                     if player in winners[potnum]:
                         pot_winnings[player] += extra_winnings
-                        #self.players[player].chips += extra_winnings
-                        #self.pay(self.players[player], extra_winnings)
                         break
-                #individ_winnings = (self.pot - extra_winnings) / len(winners)
-                #player = self.next_player_position(self.button_seat)
-                #while True:
-                    #if player in winners:
-                        ##self.players[player].chips += extra_winnings
-                        #self.pay(self.players[player], extra_winnings)
-                        #break
-                    #player = self.next_player_position(player)
             winnings.insert(0, pot_winnings)
-            #for winner in winners:
-                ##self.players[winner].chips += individ_winnings
-                #self.pay(self.players[winner], individ_winnings)
 
         for potnum in xrange(len(winnings)):
             pot_winnings = winnings[potnum]
             for player, amt in pot_winnings.iteritems():
-                ChipConduit.move(amt, self.pots[potnum], 'chips', self.players[player], 'chips')
+                ChipConduit.move(amt, self.pots[potnum], 'chips', self.players[player], 'chips', frm_tracking='pot', to_tracking={
+                    'type': 'player',
+                    'position': self.players[player].position,
+                    'brain': self.players[player].brain.__class__.__name__
+                })
             if self.pots[potnum].chips != 0:
                 raise TableException('Problem paying hand.')
+
+        for rake in self.rake:
+            self.box += rake # Final value of self.box not well tested
 
     def deal(self):
         self.initialize_hand()
@@ -344,6 +357,7 @@ class Table(object):
                     for_side_pot = self.pots[potnum].receive_bet(amt, self.players[self.action], skim=True)
                     del for_side_pot[self.action] # This player's not eligible for the new pot
                     self.pots.append(Pot(for_side_pot.keys(), initial_round_bets=for_side_pot))
+                    self.rake.append(0)
             else:
                 max_chips_in_round_bets = max(self.pots[potnum].round_bets.values())
                 if self.players[self.action].chips >= max_chips_in_round_bets:
@@ -357,6 +371,7 @@ class Table(object):
                         pot.make_ineligible_to_win(self.action)
                     del for_side_pot[self.action] # This player's not eligible for the new pot
                     self.pots.insert(potnum + 1, Pot(for_side_pot.keys(), initial_round_bets=for_side_pot))
+                    self.rake.insert(potnum + 1, 0);
                     break # Nothing left!
 
     def move_button(self):

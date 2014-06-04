@@ -5,9 +5,13 @@ from pubsub import pub
 # Also converting from a None bet value to an int bet happens here.
 class ChipConduit(object):
     @staticmethod
-    def move(amt, frm, frm_attr_name, to, to_attr_name, frm_call_args=[], to_call_args=[], between=None, between_args=[]):
+    def move(amt, frm, frm_attr_name, to, to_attr_name, frm_tracking=None, to_tracking=None, frm_call_args=[], to_call_args=[], between=None, between_args=[]):
         message_data = {}
-        if hasattr(frm, 'keys'):
+        if frm_tracking is not None:
+            message_data['from'] = frm_tracking 
+        if to_tracking is not None:
+            message_data['to'] = to_tracking 
+        if hasattr(frm, 'keys') or isinstance(frm, list):
             if frm[frm_attr_name] < amt:
                 amt = frm[frm_attr_name]
             frm[frm_attr_name] -= amt
@@ -24,13 +28,14 @@ class ChipConduit(object):
         if control is not None and 'amt' in control:
             amt = control['amt']
 
-        if hasattr(to, 'keys'):
+        if hasattr(to, 'keys') or isinstance(to, list):
             to[to_attr_name] = (to[to_attr_name] if to[to_attr_name] is not None else 0) + amt
         else:
             to_attr = getattr(to, to_attr_name)
             setattr(to, to_attr_name, (to_attr if to_attr is not None else 0) + amt)
 
         # publish about chip movement
+        message_data['amt'] = amt
         pub.sendMessage('chip_movement', data=message_data)
 
         return to_return

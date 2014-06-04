@@ -6,7 +6,7 @@ def test_table_defaults():
     table = Table()
     assert table.players == {}
     assert table.button_seat == -1
-    assert table.rake == 0
+    assert table.box == 0
     assert table.tips == 0
     assert table.units == [2, 2, 4, 4]
     assert table.limits == [10, 10, 20, 20]
@@ -24,6 +24,7 @@ def test_table():
     assert len(table.pots) == 1
     assert table.pots[0].chips == 0
     assert table.pots[0].round_bets == {0: None, 1: None, 2: None}
+    assert table.rake == [0]
 
 def test_table_no_initialize():
     table = Table()
@@ -296,6 +297,7 @@ def test_table_deal_1():
     assert table.players[2].chips == 11
     assert table.players[1].chips == 9
     assert table.players[0].chips == 10
+    assert table.box == 0
 
 def test_table_determine_final_winner():
     table = Table()
@@ -312,3 +314,87 @@ def test_table_determine_final_winner():
     table.turn()
     table.river()
 
+def test_table_take_rake():
+    table = Table()
+    for i in (1, 2, 3, 4):
+        player = Player(10)
+        player.sit(table, i)
+
+    table.initialize_hand()
+    table.incr_action()
+    table.take_bet(10)
+    table.incr_action()
+    table.take_bet(10)
+    table.incr_action()
+    table.take_bet(10)
+    table.incr_action()
+    table.take_bet(10)
+    for pot in table.pots:
+        pot.end_round()
+    table.take_rake()
+    assert table.rake == [4]
+
+def test_table_take_rake_2():
+    table = Table()
+    for i in (1, 2, 3, 4):
+        player = Player(10)
+        player.sit(table, i)
+
+    table.initialize_hand()
+    table.incr_action()
+    table.take_bet(9)
+    table.incr_action()
+    table.take_bet(9)
+    table.incr_action()
+    table.take_bet(9)
+    table.incr_action()
+    table.take_bet(9)
+    for pot in table.pots:
+        pot.end_round()
+    table.take_rake()
+    assert table.rake == [3]
+
+def test_table_take_rake_at_limit():
+    table = Table()
+    for i in (1, 2, 3, 4):
+        player = Player(100)
+        player.sit(table, i)
+
+    table.initialize_hand()
+    table.incr_action()
+    table.take_bet(100)
+    table.incr_action()
+    table.take_bet(100)
+    table.incr_action()
+    table.take_bet(100)
+    table.incr_action()
+    table.take_bet(100)
+    for pot in table.pots:
+        pot.end_round()
+    table.take_rake()
+    assert table.rake == [5]
+
+def test_table_take_rake_with_skim():
+    table = Table()
+    for i in (1, 2, 3):
+        player = Player(100)
+        player.sit(table, i)
+    player = Player(10)
+    player.sit(table, 0)
+
+    table.initialize_hand()
+    table.incr_action()
+    table.take_bet(25)
+    table.incr_action()
+    table.take_bet(25)
+    table.incr_action()
+    table.take_bet(25)
+    table.incr_action()
+    table.take_bet(11) # Gets skimmed to 10
+    assert len(table.pots) == 2
+    assert table.pots[0].round_bets == {1: 10, 0: 10, 2: 10, 3: 10}
+    assert table.pots[1].round_bets == {1: 15, 2: 15, 3: 15}
+    for pot in table.pots:
+        pot.end_round()
+    table.take_rake()
+    assert table.rake == [4, 1]

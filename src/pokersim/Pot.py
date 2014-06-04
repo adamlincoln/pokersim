@@ -31,7 +31,7 @@ class Pot(object):
     def end_round(self):
         if self.round_done():
             for position, chips in self.round_bets.iteritems():
-                ChipConduit.move(chips, self.round_bets, position, self, 'chips')
+                ChipConduit.move(chips, self.round_bets, position, self, 'chips') # Untracked right now
             self.round_bets = self.new_round(self.round_bets.keys())
         else:
             raise PotException('Betting round cannot be complete')
@@ -43,7 +43,13 @@ class Pot(object):
         if skim:
             move_kwargs = {
                 'between': self.skim_for_side_pot,
-                'between_args': [frm.chips]
+                'between_args': [frm.chips],
+                'frm_tracking': {
+                    'type': 'player',
+                    'position': frm.position,
+                    'brain': frm.brain.__class__.__name__
+                },
+                'to_tracking': 'pot'
             }
         return ChipConduit.move(
             amt,
@@ -68,7 +74,7 @@ class Pot(object):
     def make_ineligible_to_win(self, position):
         if position in self.round_bets:
             if self.round_bets[position] is not None:
-                ChipConduit.move(self.round_bets[position], self.round_bets, position, self, 'chips')
+                ChipConduit.move(self.round_bets[position], self.round_bets, position, self, 'chips') # Untracked right now
             del self.round_bets[position]
         else:
             raise PotException('Position {0} is already not eligible to win'.format(position))
