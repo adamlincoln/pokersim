@@ -351,9 +351,7 @@ class Table(object):
             if potnum == len(self.pots) - 1:
                 if self.players[self.action].chips >= amt:
                     self.pots[potnum].receive_bet(amt, self.players[self.action])
-                    pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': amt})
                 elif self.players[self.action].chips > 0:
-                    pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': self.players[self.action].chips})
                     for_side_pot = self.pots[potnum].receive_bet(amt, self.players[self.action], skim=True)
                     del for_side_pot[self.action] # This player's not eligible for the new pot
                     self.pots.append(Pot(for_side_pot.keys(), initial_round_bets=for_side_pot))
@@ -362,10 +360,8 @@ class Table(object):
                 max_chips_in_round_bets = max(self.pots[potnum].round_bets.values())
                 if self.players[self.action].chips >= max_chips_in_round_bets:
                     self.pots[potnum].receive_bet(max_chips_in_round_bets, self.players[self.action])
-                    pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': max_chips_in_round_bets})
                     amt -= max_chips_in_round_bets
                 elif self.players[self.action].chips > 0:
-                    pub.sendMessage('bet', data={'potnum': potnum, 'who': self.action, 'amt': self.players[self.action].chips})
                     for_side_pot = self.pots[potnum].receive_bet(amt, self.players[self.action], skim=True)
                     for pot in self.pots[potnum + 1:]:
                         pot.make_ineligible_to_win(self.action)
