@@ -2,6 +2,7 @@ from pubsub import pub
 from importlib import import_module
 
 from Decision import Decision
+from Bank import Bank
 
 class Player(object):
     def __init__(self, chips, brain_implementation=None):
@@ -17,7 +18,10 @@ class Player(object):
                 self.brain = eval('brain_module.{0}'.format(brain_implementation))(self)
         if self.brain is not None and hasattr(self.brain, 'watcher'):
             pub.subscribe(self.brain.watcher, pub.ALL_TOPICS)
-        self.chips = chips
+        if isinstance(chips, int):
+            self.chips = Bank.makeNewChips(chips)
+        else:
+            self.chips = chips
 
     def sit(self, table, position):
         self.table = table

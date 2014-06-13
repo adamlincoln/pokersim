@@ -1,15 +1,19 @@
 from pokersim.Player import Player
 from pokersim.Pot import Pot
 from pokersim.Pot import PotException
+from pokersim.Bank import Bank
+
+import rpdb2
 
 num_players = 10
 
 def test_new_pot():
     pot = Pot(range(num_players))
-    assert pot.chips == 0
+    assert pot.chips == []
     round_bets_keys = pot.round_bets.keys()
     round_bets_keys.sort()
     assert round_bets_keys == range(10)
+    del pot
 
 #def test_pot_ineligible_position_bet():
     #players = [Player(1000) for i in xrange(num_players)]
@@ -31,9 +35,10 @@ def test_pot_receive_bet():
     pot = Pot(range(num_players))
     pot.receive_bet(10, players[0])
     compare_round_bets = dict(zip(range(1, 10), [None for pos in range(1, 10)]))
-    compare_round_bets[0] = 10
+    compare_round_bets[0] = Bank.makeNewChips(10)
     assert pot.round_bets == compare_round_bets
-    assert pot.chips == 0
+    assert len(pot.chips) == 0
+    del pot
 
 def test_pot_single_player_end_round():
     players = []
@@ -43,11 +48,12 @@ def test_pot_single_player_end_round():
         players.append(player)
     pot = Pot(range(1))
     pot.receive_bet(10, players[0])
-    assert pot.round_bets == {0: 10}
-    assert pot.chips == 0
+    assert pot.round_bets == {0: Bank.makeNewChips(10)}
+    assert pot.chips == []
     pot.end_round()
     assert pot.round_bets == {0: None}
-    assert pot.chips == 10
+    assert len(pot.chips) == 10
+    del pot
 
 def test_pot_three_players_end_round():
     players = []
@@ -65,11 +71,13 @@ def test_pot_three_players_end_round():
     assert not pot.round_done()
     pot.make_ineligible_to_win(0) # Player 0 folds
     assert pot.round_done()
-    assert pot.round_bets == {1: 10, 2: 10}
-    assert pot.chips == 5
+    assert pot.round_bets == {1: Bank.makeNewChips(10), 2: Bank.makeNewChips(10)}
+    print 'LEN', pot.chips
+    assert len(pot.chips) == 5
     pot.end_round()
-    assert pot.chips == 25
+    assert len(pot.chips) == 25
     assert pot.round_bets == {1: None, 2: None}
+    del pot
 
 def test_pot_three_players_bad_fold():
     players = []
@@ -95,6 +103,7 @@ def test_pot_three_players_bad_fold():
         assert str(e) == 'Position 1 is already not eligible to win'
     else:
         assert False
+    del pot
 
 def test_pot_three_players_end_round_2():
     players = []
@@ -110,6 +119,7 @@ def test_pot_three_players_end_round_2():
     assert not pot.round_done()
     pot.receive_bet(0, players[2])
     assert pot.round_done()
+    del pot
 
 def test_pot_three_players_bad_end_round():
     players = []
@@ -128,6 +138,7 @@ def test_pot_three_players_bad_end_round():
         assert str(e) == 'Betting round cannot be complete'
     else:
         assert False
+    del pot
 
 def test_pot_skim_1():
     players = []
@@ -143,6 +154,7 @@ def test_pot_skim_1():
     for_next_pot = pot.skim_for_side_pot(7)
     assert pot.round_bets == {0: 7, 1: 7, 2: None}
     assert for_next_pot == ({0: 3, 1: 3, 2: None}, {'amt': 7})
+    del pot
 
 def test_pot_skim_2():
     players = []
@@ -158,6 +170,7 @@ def test_pot_skim_2():
     for_next_pot = pot.skim_for_side_pot(7)
     assert pot.round_bets == {0: 5, 1: 7, 2: None}
     assert for_next_pot == ({1: 3, 2: None}, {'amt': 7})
+    del pot
 
 def test_pot_starting_chips():
     players = []
@@ -168,6 +181,7 @@ def test_pot_starting_chips():
     pot = Pot(range(1), 10)
     assert pot.round_bets == {0: None}
     assert pot.chips == 10
+    del pot
 
 def test_pot_initial_round_bets():
     players = []
@@ -178,6 +192,7 @@ def test_pot_initial_round_bets():
     pot = Pot(range(3), initial_round_bets={0: 5, 2: 5})
     assert pot.chips == 0
     assert pot.round_bets == {0: 5, 2: 5}
+    del pot
 
 def test_pot_initial_round_bets_chained():
     players = []
@@ -185,13 +200,19 @@ def test_pot_initial_round_bets_chained():
         player = Player(1000)
         player.position = i
         players.append(player)
-    pot = Pot(range(3))
-    pot.receive_bet(15, players[0])
-    pot2 = Pot(range(3), initial_round_bets=pot.skim_for_side_pot(10)[0])
-    assert pot.chips == 0
-    assert pot.round_bets == {0: 10, 1: None, 2: None}
-    assert pot2.chips == 0
-    assert pot2.round_bets == {0: 5, 1: None, 2: None}
+    rpdb2.start_embedded_debugger('HELLO')
+    pota = Pot(range(3))
+    print 'PCPREPRE', len(pota.chips), pota.chips
+    pota.receive_bet(15, players[0])
+    print 'PCPRE', len(pota.chips), pota.chips
+    pot2 = Pot(range(3), initial_round_bets=pota.skim_for_side_pot(10)[0])
+    print 'PC', len(pota.chips), pota.chips
+    print 'RB', pota.round_bets
+    assert pota.chips == []
+    assert pota.round_bets == {0: Bank.makeNewChips(10), 1: None, 2: None}
+    assert pot2.chips == []
+    assert pot2.round_bets == {0: Bank.makeNewChips(5), 1: None, 2: None}
+    #del pot
 
 def test_pot_action_needed():
     players = []
@@ -212,4 +233,5 @@ def test_pot_action_needed():
     assert pot.action_needed(0)
     assert not pot.action_needed(1)
     assert pot.action_needed(2)
+    del pot
 
